@@ -1,0 +1,15 @@
+{
+  "WoWHotKeys": {
+    "ExitHotKey": "ALT|1",
+    "StopAllMacrosHotKey": "ALT|S"
+  },
+  "WoWGeneralSettings": {
+    "GUITheme": "Style 12",
+    "GameRegion": "EU",
+    "Bot_Email": "",
+    "Bot_UserName": "",
+    "Script_Path": null,
+    "Loop_Macro": false,
+    "Alternative_Input": false
+  }
+}
