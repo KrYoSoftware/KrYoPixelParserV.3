@@ -1,0 +1,73 @@
+KrYo Pixel Parser V1
+
+
+Wrath - Holy Priest
++ Changed Trinket Logic
++ Tweaked Default Settings
++ Added StopCast @xxx
++ Mending Changes
+
+Wrath - Shadow Priest
++ VT Tweaks
++ Opener Adjusted
++ Added Wanding Logic
++ Smart Target Enemy Added
++ Mouseover Tweaks
++ Weaving Tweaks
+ 
+Wrath - Feral Tank / Kitty
++ BearWeaving Toggles
++ Opener Adjustments
++ Energy Managment Updated
++ Talent Checker Added
++ PVP Options Added
++ AOE Changes To adapt To BearWeaving
+ 
+KrYo — 09/20/2022
+Wrath - Unholy DeathKnight 
++ Auto Removal Fear & Stuns
++ AMS Toggle
++ Death Pact Logic ( PVP / PVE )
++ Gargoyle Optimized Logic
++ Presences Handler
++ DND Options
+ 
+KrYo — 09/20/2022
+Wrath - Balance Druid 
+
++ Cursor Placement Modified
++ Cooldown Usage With Single Target / AOE
++ Mobcount to use Cooldowns ( Hurricane Fix)
++ Force Of Nature Optimized
++ Talent Checker
++ Leveling Support Added
+ 
+KrYo — 09/20/2022
+Wrath - Elemental Shaman
+
++ Thunderstorm Option
++ Call Of Elements Totem settings
++ Healing Options
++ Talent Checker
++ Leveling Support Added
+ 
+Wrath - Resto Shaman
++ Riptide Logic
++ Smart Targeting Tweaked
++ Added StopCast @xxx
++ Auto Wolf OOC
++ Spirit Walkers Ggrace Toggle
++ Talent Checker
++ Leveling Support Added
++ Chain Heal Loggic
++ EarthShield Settings
++ Totem Call Logic
+ 
+KrYo — 09/21/2022
+Wrath - Enhance Shaman
++ Totem Twisting Logic
++ Option to Select Weapon Build 
++ Auto Wolf OOC
++ Talent Checker
++ Leveling Support Added
++ Self Healing Added
