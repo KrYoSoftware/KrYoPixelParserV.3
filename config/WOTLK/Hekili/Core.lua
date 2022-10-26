@@ -63,7 +63,7 @@ function EventFrame:PLAYER_LOGIN()
 		CrazyFrame[x]:SetHeight(tHeight)
 		CrazyFrame[x]:SetPoint("TOPLEFT", step  ,0)
 		CrazyFrame[x].t:SetAllPoints(CrazyFrame[x])
-		CrazyFrame[x].t:SetColorTexture(0,0,0)
+		CrazyFrame[x].t:SetColorTexture(0,0,0,0)
 		CrazyFrame[x]:Show()			
 		step = step + tWidth;					
 	end
