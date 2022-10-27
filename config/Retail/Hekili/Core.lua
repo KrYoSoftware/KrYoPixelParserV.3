@@ -77,7 +77,7 @@ function EventFrame:PLAYER_LOGIN()
 		CrazyFrame[spellId]:SetHeight(tHeight)
         CrazyFrame[spellId]:SetPoint("TOPLEFT", step, -tHeight)    -- row 2, column 1+ [Spell Cooldowns]
         CrazyFrame[spellId].t = CrazyFrame[spellId]:CreateTexture()        
-        CrazyFrame[spellId].t:SetColorTexture(0, 0, 0, 1)
+        CrazyFrame[spellId].t:SetColorTexture(0, 0, 0, 0)
         CrazyFrame[spellId].t:SetAllPoints(CrazyFrame[spellId])
         CrazyFrame[spellId]:Show()		               
         step = step + tWidth;	
