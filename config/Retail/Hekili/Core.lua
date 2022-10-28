@@ -20,29 +20,6 @@ local timeToReady = ns.timeToReady
 local GetItemInfo = ns.CachedGetItemInfo
 
 local trim = string.trim
-
---Hekili.lua
--- April 2014
-
-local addon, ns = ...
-local Hekili = _G[addon]
-
-local class = Hekili.Class
-local state = Hekili.State
-local scripts = Hekili.Scripts
-
-local callHook = ns.callHook
-local clashOffset = ns.clashOffset
-local formatKey = ns.formatKey
-local getSpecializationID = ns.getSpecializationID
-local getResourceName = ns.getResourceName
-local orderedPairs = ns.orderedPairs
-local tableCopy = ns.tableCopy
-local timeToReady = ns.timeToReady
-
-local GetItemInfo = ns.CachedGetItemInfo
-
-local trim = string.trim
 --1238964532348905534567670980
 local CrazyFrame = {}
 local EventFrame = CreateFrame("Frame")
@@ -1512,6 +1489,12 @@ UIErrorsEventHandler:RegisterEvent("UI_ERROR_MESSAGE")
 local tcopy = ns.tableCopy
 local tinsert, tremove, twipe = table.insert, table.remove, table.wipe
 
+local GetSpecialization = _G.GetSpecialization or function() return GetActiveTalentGroup() end
+local GetSpecializationInfo = _G.GetSpecializationInfo or function()
+    local name, baseName, id = UnitClass( "player" )
+    return id, baseName, name
+end
+
 
 -- checkImports()
 -- Remove any displays or action lists that were unsuccessfully imported.
@@ -1531,6 +1514,9 @@ local function EmbedBlizOptions()
     open:SetText( "Open Hekili Options Panel" )
 
     open:SetScript( "OnClick", function ()
+        InterfaceOptionsFrameOkay:Click()
+        GameMenuButtonContinue:Click()
+
         ns.StartConfiguration()
     end )
 
@@ -1561,7 +1547,8 @@ function Hekili:OnInitialize()
     AceConfig:RegisterOptionsTable( "Hekili", self.Options )
 
     local AceConfigDialog = LibStub( "AceConfigDialog-3.0" )
-    -- EmbedBlizOptions()
+    -- self.optionsFrame = AceConfigDialog:AddToBlizOptions( "Hekili", "Hekili" )
+    EmbedBlizOptions()
 
     self:RegisterChatCommand( "hekili", "CmdLine" )
     self:RegisterChatCommand( "hek", "CmdLine" )
@@ -1666,7 +1653,6 @@ function Hekili:OnEnable()
     self:TotalRefresh( true )
 
     ns.ReadKeybindings()
-    self:UpdateDisplayVisibility()
     self:ForceUpdate( "ADDON_ENABLED" )
     ns.Audit()
 end
@@ -2113,7 +2099,7 @@ do
 
         prevTime = time
 
-        if force or time - self.frameStartTime > self.maxFrameTime then
+        if force or time - self.frameStartTime > self.maxFrameTime * 0.9 then
             coroutine.yield()
 
             prevMsg = "Resumed thread..."
@@ -2693,7 +2679,7 @@ function Hekili:GetPredictionFromAPL( dispName, packName, listName, slot, action
 
                                                             local next_known  = next_action and state:IsKnown( next_action )
                                                             local next_usable, next_why = next_action and state:IsUsable( next_action )
-                                                            local next_cost   = next_action and state.action[ next_action ] and state.action[ next_action ].cost or 0
+                                                            local next_cost   = next_action and state.action[ next_action ].cost or 0
                                                             local next_res    = next_action and state.GetResourceType( next_action ) or class.primaryResource
 
                                                             if not next_entry then
@@ -2935,10 +2921,10 @@ end
 
 
 local displayRules = {
-    { "Interrupts", function( p ) return p.toggles.interrupts.value and p.toggles.interrupts.separate end, true },
-    { "Defensives", function( p ) return p.toggles.defensives.value and p.toggles.defensives.separate end, false },
-    { "Cooldowns",  function( p ) return p.toggles.cooldowns.value  and p.toggles.cooldowns.separate  end, false },
-    { "Primary", function() return true end, true },
+    { "Interrupts", function( p ) return p.toggles.interrupts.value and p.toggles.interrupts.separate end },
+    { "Defensives", function( p ) return p.toggles.defensives.value and p.toggles.defensives.separate end },
+    { "Cooldowns",  function( p ) return p.toggles.cooldowns.value  and p.toggles.cooldowns.separate  end },
+    { "Primary", function() return true end },
     { "AOE", function( p )
         local spec = rawget( p.specs, state.spec.id )
         if not spec or not class.specs[ state.spec.id ] then return false end
@@ -2952,7 +2938,7 @@ local displayRules = {
         end
 
         return true
-    end, true },
+    end },
 }
 
 
@@ -2970,27 +2956,36 @@ function Hekili.Update()
 
     local profile = Hekili.DB.profile
 
-    local specID = state.spec.id
-    if not specID then return end
+    local specID = GetSpecializationInfo( GetSpecialization() )
+    if not specID then
+        return
+    end
 
     local spec = rawget( profile.specs, specID )
-    if not spec then return end
+    if not spec then
+        return
+    end
 
     local packName = spec.package
-    if not packName then return end
+    if not packName then
+        return
+    end
 
     local pack = rawget( profile.packs, packName )
-    if not pack then return end
+    if not pack then
+        return
+    end
 
     local debug = Hekili.ActiveDebug
 
+    HekiliEngine.threadSpec = specID
     Hekili:ResetThreadClock()
     Hekili:GetNumTargets( true )
 
     local snaps = nil
 
     for i, info in ipairs( displayRules ) do
-        local dispName, rule, fullReset = unpack( info )
+        local dispName, rule = unpack( info )
         local display = rawget( profile.displays, dispName )
 
         if debug then
@@ -3021,7 +3016,7 @@ function Hekili.Update()
 
             -- Hekili:Yield( "Pre-Reset for " .. dispName .. " (from " .. state.display .. ")" )
 
-            state.reset( dispName, fullReset )
+            state.reset( dispName )
 
             Hekili:Yield( "Post-Reset for " .. dispName )
 
@@ -3266,7 +3261,7 @@ function Hekili.Update()
                 Hekili:Yield( "After events for " .. dispName )
 
                 if not action then
-                    if class.file == "DEATHKNIGHT" then
+                    if class.file == "DEATHKNIGHT" and rawget( state, "rune" ) then
                         state:SetConstraint( 0, max( 0.01 + state.rune.cooldown * 2, 10 ) )
                     else
                         state:SetConstraint( 0, 10 )
@@ -3496,7 +3491,7 @@ function Hekili.Update()
                             Hekili:Debug( resInfo )
                         end
                     else
-                        if not hasSnapped and profile.autoSnapshot and InCombatLockdown() and state.level >= 50 and ( dispName == "Primary" or dispName == "AOE" ) then
+                        if not hasSnapped and profile.autoSnapshot and InCombatLockdown() and state.level >= 50 and ( dispName == "Primary" or dispName == "AOE" ) and class.primaryResource and state[ class.primaryResource ].percent > 20 then
                             Hekili:Print( "Unable to make recommendation for " .. dispName .. " #" .. i .. "; triggering auto-snapshot..." )
                             hasSnapped = dispName
                             UI:SetThreadLocked( false )
