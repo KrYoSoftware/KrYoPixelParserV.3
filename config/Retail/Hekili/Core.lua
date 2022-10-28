@@ -100,7 +100,7 @@ for x = 0, 50 do
 
         CrazyFrame[x].t:SetAllPoints(CrazyFrame[x])
 
-        CrazyFrame[x].t:SetColorTexture(0, 0, 0, 0)
+        CrazyFrame[x].t:SetColorTexture(0,0,0,0)
 
         CrazyFrame[x]:Show()
 
