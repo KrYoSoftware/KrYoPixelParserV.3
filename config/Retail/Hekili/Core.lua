@@ -117,7 +117,7 @@ step = 0
         CrazyFrame[spellId]:SetHeight(tHeight)
         CrazyFrame[spellId]:SetPoint("TOPLEFT", step, -tHeight)-- row 2, column 1 + [Spell Cooldowns]
         CrazyFrame[spellId].t = CrazyFrame[spellId]:CreateTexture()
-        CrazyFrame[spellId].t:SetColorTexture(0, 0, 0, 0)
+        CrazyFrame[spellId].t:SetColorTexture(0,0,0,0)
         CrazyFrame[spellId].t:SetAllPoints(CrazyFrame[spellId])
         CrazyFrame[spellId]:Show()
         step = step + tWidth;
@@ -237,7 +237,7 @@ function updateSpellCooldowns(sinceLastUpdate)
          --   print(name)
             local startTime, duration, enabled, modRate = GetSpellCooldown(name)
         if startTime  == nil  then
-            CrazyFrame[spellId].t: SetColorTexture(0, 0, 0, 1)
+            CrazyFrame[spellId].t:SetColorTexture(0,0,0,0)
             CrazyFrame[spellId].t:SetAllPoints(false)
                 end
         if enabled == 0 then
@@ -316,7 +316,7 @@ function lowest()
             end
     end
 	if lowesthp == 100 then
-        CrazyFrame[41].t: SetColorTexture(0, 0, 0, 1)
+        CrazyFrame[41].t: t:SetColorTexture(0,0,0,0)
 
         return nil
 
@@ -336,7 +336,7 @@ function lowest()
         local getColorModifier = 1 / tonumber(string.format("%.2f", getID))
         CrazyFrame[41].t: SetColorTexture(1, getColorModifier, 1, 1)
     else
-    CrazyFrame[41].t:SetColorTexture(0, 0, 0, 1)
+    CrazyFrame[41].t:SetColorTexture(0,0,0,0)
     end
     return lowestUnit
 end
