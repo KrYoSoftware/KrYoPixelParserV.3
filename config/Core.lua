@@ -1510,38 +1510,11 @@ function OnUIErrorMessage(self, event, messageType, message)
   UIErrorsEventHandler:SetScript("OnEvent", OnUIErrorMessage)
   UIErrorsEventHandler:RegisterEvent("UI_ERROR_MESSAGE")
 
-local trim = string.trim
 
 
-local tcopy = ns.tableCopy
-local tinsert, tremove, twipe = table.insert, table.remove, table.wipe
 
 
--- checkImports()
--- Remove any displays or action lists that were unsuccessfully imported.
-local function checkImports()
-end
-ns.checkImports = checkImports
 
-
-local function EmbedBlizOptions()
-    local panel = CreateFrame( "Frame", "HekiliDummyPanel", UIParent )
-    panel.name = "Hekili"
-
-    local open = CreateFrame( "Button", "HekiliOptionsButton", panel, "UIPanelButtonTemplate" )
-    open:SetPoint( "CENTER", panel, "CENTER", 0, 0 )
-    open:SetWidth( 250 )
-    open:SetHeight( 25 )
-    open:SetText( "Open Hekili Options Panel" )
-
-    open:SetScript( "OnClick", function ()
-        ns.StartConfiguration()
-    end )
-
-    Hekili:ProfileFrame( "OptionsEmbedFrame", open )
-
-    InterfaceOptions_AddCategory( panel )
-end
 
 
 -- OnInitialize()
