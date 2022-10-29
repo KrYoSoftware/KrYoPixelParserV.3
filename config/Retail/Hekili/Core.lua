@@ -52,7 +52,1463 @@ local function EmbedBlizOptions()
     InterfaceOptions_AddCategory( panel )
 end
 
+local EventFrame = CreateFrame("Frame")
 
+local CrazyFrame = {}
+local _CBLD = {}
+local loop = CreateFrame("Frame")
+local currentAddon = ""
+local BindingTable = {id = {}, bind = { }, spellType = { }, numberSlot = { }, stringFieldBind = { }, buttonTextureTo = { }, buttonTextureFrom = { }, buttonTextureBind = { }, buttonTextureType = { }}
+local TCONRO = nil
+local cooldowns = { --These should be spellIDs for the spell you want to track for cooldowns
+    137619,  -- Marked for Death
+    13877,   -- Blade Flurry
+    51690,   -- Killing Spree
+    152150,  -- Death from Above
+    2098,    -- Run Through
+    185763,  -- Pistol Shot
+    193315,  -- Saber Slash
+    202665,  -- Curse of Dreadblades
+    196937,  -- Ghostly Strike
+    13750,   -- Adrenaline Rush
+    193316,  -- Roll the Bones
+    5171 	 -- Slice and Dice
+}
+local s_count = 0;
+local btnTMWmain = nil
+function EventFrame:OnEvent(event, ...)
+    -- print("Welcome to Meoww Legion!")
+
+    self[event](self, ...)
+end
+EventFrame:SetScript("OnEvent", EventFrame.OnEvent)
+
+function EventFrame:PLAYER_LOGIN()
+
+    local step = 0;
+    local tHeight = 1;
+for x = 0, 50 do
+        CrazyFrame[x] = CreateFrame("Frame", "", UIParent)
+
+        CrazyFrame[x].t = CrazyFrame[x]:CreateTexture()
+
+        CrazyFrame[x]:ClearAllPoints()
+
+        CrazyFrame[x]:SetScale(1)
+
+        CrazyFrame[x]:SetFrameStrata("TOOLTIP")
+
+        CrazyFrame[x]:SetWidth(1)
+
+        CrazyFrame[x]:SetHeight(tHeight)
+
+        CrazyFrame[x]:SetPoint("TOPLEFT", step, 0)
+
+        CrazyFrame[x].t:SetAllPoints(CrazyFrame[x])
+
+        CrazyFrame[x].t:SetColorTexture(0,0,0)
+
+        CrazyFrame[x]:Show()
+
+        step = step + 1;
+end
+    for _, spellId in pairs(cooldowns) do
+        CrazyFrame[spellId] = CreateFrame("frame", "", UIParent)
+        CrazyFrame[spellId]:SetWidth(1)
+        CrazyFrame[spellId]:SetHeight(tHeight)
+        CrazyFrame[spellId]:SetPoint("TOPLEFT", step, 0)-- row 1, column 1 + [Spell Cooldowns]
+        CrazyFrame[spellId].t = CrazyFrame[spellId]:CreateTexture()
+        CrazyFrame[spellId].t:SetColorTexture(0, 0, 0)
+        CrazyFrame[spellId].t:SetAllPoints(CrazyFrame[spellId])
+        CrazyFrame[spellId]:Show()
+        step = step + 1;
+end
+        if ConROC then
+            TCONRO = ConROC
+
+        elseif ConRO then
+			TCONRO = ConRO
+		end	
+		_CBLD.CheckBuild()
+end
+EventFrame:RegisterEvent("PLAYER_LOGIN")
+function tablelength(T)
+    local count = 0
+    for _ in pairs(T) do count = count + 1 end
+    return count
+  end
+local updateIcon = CreateFrame("Frame")
+function updateIcon:onUpdate(sinceLastUpdate)
+    self.sinceLastUpdate = (self.sinceLastUpdate or 0) +sinceLastUpdate
+    if (self.sinceLastUpdate >= 0.05) then
+
+        _CBLD.PushDefaultData2Screen()
+
+        if TCONRO then
+
+            if TCONRO.AbilityBuff ~= nil then
+                _CBLD.ShowOther(2, TCONRO.AbilityBuff)
+
+            elseif TCONRO.AbilityBurst ~= nil then
+
+                _CBLD.ShowOther(2, TCONRO.AbilityBurst)
+
+            else
+    _CBLD.ShowOther(2, nil)
+
+            end
+        elseif TMW then
+			_CBLD.ShowTmw()
+		elseif WeakAuras then	
+			_CBLD.WeekSpellFromTexture()
+			
+		end
+        self.sinceLastUpdate = 0
+    end
+end
+
+updateIcon:SetScript(
+        "OnUpdate",
+        function(self, sinceLastUpdate)
+            updateIcon:onUpdate(sinceLastUpdate)
+        end
+)
+
+function buffcount(unit, buff)
+    for i = 1, 40 do
+        local name, icon, count, debuffType, duration, expirationTime, unitCaster, isStealable,
+        nameplateShowPersonal, spellId, canApplyAura, isBossDebuff, nameplateShowAll, timeMod, value1, value2, value3 = UnitBuff(unit, i)
+        if name == buff then
+            return (count == 0 and 1 or count)
+        end
+    end
+    return 0
+end
+
+function debuffcount(unit, buff)
+    for i = 1, 40 do
+        local name, icon, count, debuffType, duration, expirationTime, unitCaster, isStealable,
+        nameplateShowPersonal, spellId, canApplyAura, isBossDebuff, nameplateShowAll, timeMod, value1, value2, value3 = UnitDebuff(unit, i)
+        if name == buff then
+            return (count == 0 and 1 or count)
+        end
+    end
+    return 0
+end
+
+function auraexists(unit, auraName)
+    local name, icon, count, debuffType, duration, expirationTime, unitCaster, canStealOrPurge,
+    nameplateShowPersonal, spellId, canApplyAura, isBossDebuff, isCastByPlayer, nameplateShowAll, timeMod = AuraUtil.FindAuraByName(auraName, unit, "player")
+		
+	if name then
+        return true
+    else
+		return false
+	end
+end
+
+function spellcooldown(spell)
+	local name = GetSpellInfo(spell)
+    local startTime , duration, enabled, modRate = GetSpellCooldown(spell)
+	if startTime  == nil then
+		return 9999
+    end
+	if enabled == 0 then
+		print(name .. " is currently active, use it and wait " .. duration .. " seconds for the next one.");
+return 0
+
+    elseif(startTime > 0 and duration > 0) then
+        local timeRemaining=(startTime  + duration - GetTime())
+		print(name.." is cooling down, wait "..timeRemaining.." seconds for the next one.");
+return timeRemaining
+
+    else
+    print(name.." is ready.");
+return 0
+
+    end
+end
+
+function updateSpellCooldowns(sinceLastUpdate) 
+    for _, spellId in pairs(cooldowns) do
+        --start is the value of GetTime() at the point the spell began cooling down
+		-- duration is the total duration of the cooldown, NOT the remaining
+        local name = GetSpellInfo(spellId)
+        if name~= nil then
+         --   print(name)
+            local startTime, duration, enabled, modRate = GetSpellCooldown(name)
+        if startTime  == nil  then
+            CrazyFrame[spellId].t: SetColorTexture(0, 0, 0, 1)
+            CrazyFrame[spellId].t:SetAllPoints(false)
+                end
+        if enabled == 0 then
+            print(name.." is currently active, use it and wait "..duration.." seconds for the next one.");
+return 0
+        elseif(startTime~= nil and duration ~= nil and startTime > 0 and duration > 0) then
+            local timeRemaining=(startTime  + duration - GetTime())
+            local remainingTime = string.format("%00.2f", tostring(timeRemaining))
+                    local green = tonumber(strsub(tostring(remainingTime), 1, 2))/ 100
+                    local blue = tonumber(strsub(tostring(remainingTime), -2, -1)) / 100
+                    CrazyFrame[spellId].t: SetColorTexture(0, green, blue, 1)
+                    CrazyFrame[spellId].t:SetAllPoints(false)
+                    print(name.." is cooling down, wait "..remainingTime.." seconds for the next one.");
+
+elseif(startTime~= nil and duration ~= nil and  startTime <= 0 and duration <= 0) then
+    --print("Spell is ready.")
+            CrazyFrame[spellId].t:SetColorTexture(1, 1, 1, 1)
+            CrazyFrame[spellId].t:SetAllPoints(false)
+        end
+
+        end
+        
+	end
+end
+
+function interruptable(unit) 
+    local name, subText, text, texture, startTime, endTime, isTradeSkill, castID, notInterruptible = UnitCastingInfo(unit)
+	local cname, ctext, ctexture, cstartTimeMS, cendTimeMS, cisTradeSkill, cnotInterruptible, cspellId = UnitChannelInfo(unit)
+
+    if notInterruptible == 1 or cnotInterruptible == 1 then
+        return true
+    else 
+        return false
+    end
+end
+
+function curSpellCharges(spell) 
+	local currentCharges, maxCharges, cooldownStart, cooldownDuration, chargeModRate = GetSpellCharges(spell)
+	return currentCharges
+end
+
+function health(unit)
+	if unit ~= nil then
+    return (UnitHealth(unit) / UnitHealthMax(unit)) * 100
+    end
+    return 100
+end
+
+function setNextSpell(r, g, b, a)     
+   --nextSpellFrameTexture:SetColorTexture(r, g, b, a)
+  --  nextSpellFrame.background = nextSpellFrameTexture
+end
+
+function isChanneling(unit)
+	return UnitChannelInfo(unit)
+end
+
+function castable(spell) 
+	local name, rank, icon, castTime, minRange, maxRange, spellID = GetSpellInfo(spell)
+	print(spellID)
+	local usable, nomana = IsUsableSpell(spell)
+	local cdcheck = spellcooldown(spell) == 0
+
+    return usable == true and cdcheck == true
+end
+
+function lowest() 
+    local lowestUnit = not UnitIsDeadOrGhost("player") and "player" or false
+    local lowesthp = not UnitIsDeadOrGhost("player") and health("player") or math.huge
+    local unit
+    for i = 1, GetNumGroupMembers() - 1 do
+        unit = IsInRaid() and 'raid' .. i or UnitInBattleground("player") and 'raid'..i or 'party'..i
+            if IsActionInRange(1) and not UnitIsDeadOrGhost(unit) and health(unit) < lowesthp then
+                lowestUnit = unit
+                lowesthp = health(unit)
+            end
+    end
+	if lowesthp == 100 then
+        CrazyFrame[41].t: SetColorTexture(0, 0, 0, 1)
+
+        return nil
+
+    end
+    local name, _ = UnitNameUnmodified(lowestUnit)
+	if name ~= nil then
+		print(name .. "Is The Lowest Health " .. string.format("%.0f", lowesthp))
+	end
+    if lowestUnit == "player" then
+        CrazyFrame[41].t: SetColorTexture(0.025, 0, 1, 1)
+    elseif string.find(lowestUnit, "party") then
+        local getID=string.sub(lowestUnit,6,6)
+        local getColorModifier = 1 / tonumber(string.format("%.2f", getID))
+        CrazyFrame[41].t: SetColorTexture(0.5, getColorModifier, 1, 1)
+    elseif string.find(lowestUnit, "raid") then
+        local getID=string.sub(lowestUnit,5,5)
+        local getColorModifier = 1 / tonumber(string.format("%.2f", getID))
+        CrazyFrame[41].t: SetColorTexture(1, getColorModifier, 1, 1)
+    else
+    CrazyFrame[41].t:SetColorTexture(0, 0, 0, 1)
+    end
+    return lowestUnit
+end
+
+
+function loop:onUpdate(sinceLastUpdate)
+
+    self.sinceLastUpdate = (self.sinceLastUpdate or 0) +sinceLastUpdate
+    if (self.sinceLastUpdate >= 0.01) then
+        local lowestParty = lowest()
+    if (lowestParty == 'player') and not UnitIsUnit(lowestParty, 'target') then
+        self.sinceLastUpdate = 0
+        return setNextSpell(1,0,0,1)
+    end
+    if lowestParty == 'party1' and not UnitIsUnit(lowestParty, 'target') then
+        self.sinceLastUpdate = 0
+        return setNextSpell(0,1,0,1)
+    end
+    if lowestParty == 'party2' and not UnitIsUnit(lowestParty, 'target') then
+        self.sinceLastUpdate = 0
+        return setNextSpell(0,0,1,1)
+    end
+    if lowestParty == 'party3' and not UnitIsUnit(lowestParty, 'target') then
+        self.sinceLastUpdate = 0
+        return setNextSpell(0,1,1,1)
+    end
+    if lowestParty == 'party4' and not UnitIsUnit(lowestParty, 'target') then
+        self.sinceLastUpdate = 0
+        return setNextSpell(1,0,1,1)
+    end
+    if health(lowestParty) <= 85 and IsActionInRange(2) and castable("Holy Shock") then
+        self.sinceLastUpdate = 0
+        return setNextSpell(.51,0,0,1)
+    end
+    if health(lowestParty) <= 85 and IsActionInRange(3) and castable("Bestow Faith") then
+        self.sinceLastUpdate = 0
+        return setNextSpell(0,.51,0,1)
+    end
+    if health(lowestParty) <= 75 and IsActionInRange(5) and castable("Flash of Light") then
+        self.sinceLastUpdate = 0
+        return setNextSpell(.51,1,1,1)
+    end
+    if health(lowestParty) <= 85 and IsActionInRange(5) and castable("Holy Light") then
+        self.sinceLastUpdate = 0
+        return setNextSpell(0,0,.51,1)
+    end
+    self.sinceLastUpdate = 0
+	return setNextSpell(0,0,0,0)
+    end
+
+end
+loop:SetScript(
+        "OnUpdate",
+        function(self, sinceLastUpdate)
+            loop: onUpdate(sinceLastUpdate)
+            updateSpellCooldowns(sinceLastUpdate)
+        end)
+
+function Trim(s)
+  return (string.gsub(s, "^%s*(.-)%s*$", "%1"))
+end
+local actionBars = {
+    [1] = "ActionButton",
+    [2] = "MultiBarRightButton",
+    [3] = "MultiBarLeftButton",
+    [4] = "MultiBarBottomRightButton",
+    [5] = "MultiBarBottomLeftButton"
+}
+
+
+function _CBLD.CheckBuild()
+
+    local v, b, d, t = GetBuildInfo()
+	if v then
+		local sv = tostring(v)
+		local s = string.sub(sv, 1, 1)
+		if s then
+			local sn = tonumber(s)			
+			if sn then
+
+                if sn == 2 then
+                    btnTMWmain = "TellMeWhen_Group3_Icon1"
+
+                elseif sn == 1 then
+				
+				elseif sn == 9 then
+					btnTMWmain = "TellMeWhen_Group16_Icon1"
+				end
+			end
+		end
+	end
+end
+
+function _CBLD.GetFrame(slot)
+        local name
+        if _G["Bartender4"] then
+            name = "BT4Button"..slot
+        else
+            if slot <= 24 or slot > 72 then
+                name = "ActionButton" .. (((slot - 1) % 12) +1)
+            else
+    local slotIndex = slot - 1
+                local actionBar = (slotIndex - (slotIndex % 12)) / 12
+                name = actionBars[actionBar] ..((slotIndex % 12) + 1)
+            end
+        end
+        return _G[name]
+end
+function _CBLD.ParseMacro(macroId)
+	local macrobody = { }
+	macrobody = GetMacroBody(macroId)
+	local spellId
+	local spellType
+	if macrobody then
+		local sep = "/"
+		local t={}
+		for str in string.gmatch(macrobody, "([^"..sep.."]+)") do
+        table.insert(t, str)
+
+        end
+
+        local mcb = ""
+		local mcbtype = ""
+		for i = 1, #t do
+			local s = string.sub(t[i], 1, 4)
+			if s == "cast" then
+                mcb = Trim(string.sub(t[i], 5, string.len(t[i])))
+
+                mcbtype = "spell"
+
+                break
+
+            end
+            s = string.sub(t[i], 1, 3)
+			
+			if s == "use" then
+				mcb = Trim(string.sub(t[i], 4, string.len(t[i])))
+				mcbtype = "item"
+
+                break
+
+            end
+        end
+		if mcb ~= "" then
+			local sep = "]"
+			local t={}
+			for str in string.gmatch(macrobody, "([^"..sep.."]+)") do
+        table.insert(t, str)
+
+            end
+
+            local size = #t
+			local spellName = ""
+			if size >= 2 then
+				local n = t[size]
+spellName = Trim(n)
+
+            else
+    spellName = Trim(mcb)
+
+
+            end
+            if spellName then
+
+                if mcbtype == "spell" then
+                    local out_spell_name, rank, icon, castTime, minRange, maxRange, spellid = GetSpellInfo(spellName)
+
+                    return spellid, mcbtype
+                end
+				if mcbtype == "item" then
+					local itemID, itemType, itemSubType, itemEquipLoc, icon, itemClassID, itemSubClassID = GetItemInfoInstant(spellName) 
+					return itemID, mcbtype
+				end
+			end
+		
+		end
+	end
+	return nil
+end
+
+function _CBLD.ParseLink(hyperlink)
+    local color, linkType, linkData, text = string.match(hyperlink, "|?c?f?f?(%x*)|?H?([^:]*):?(%d+)|?h?%[?([^%[%]]*)%]?|?h?|?r?")
+    return color, linkType, linkData, text
+end
+
+function _CBLD.AddBind(actionType, buttonName, keyBind, spellId, slot)
+	
+	local bt = _CBLD.GetFrame(slot)
+	local text = 0
+	if bt then
+		local at = bt.icon:GetTexture()
+
+        if at then
+            text = tonumber(at)
+
+        end
+    end
+	
+	if actionType == "spell" then
+		local id = tonumber(spellId)
+		if id then
+
+            if not BindingTable.id[id] then
+                BindingTable.id[id] = id
+
+                BindingTable.bind[id] = keyBind
+
+                BindingTable.spellType[id] = actionType
+
+                BindingTable.numberSlot[id] = slot
+
+                local b = tostring(keyBind)
+
+                BindingTable.stringFieldBind[b] = id
+
+
+                BindingTable.buttonTextureTo[id] = text
+
+                BindingTable.buttonTextureFrom[text] = id
+
+                BindingTable.buttonTextureBind[text] = keyBind
+
+                BindingTable.buttonTextureType[text] = actionType
+                --print(BindingTable.spellType[id] .. " : " .. BindingTable.id[id] .. " : " .. BindingTable.bind[id])
+
+            end
+        end
+	elseif actionType == "item" then
+		local id = tonumber(spellId)
+		if id then
+
+            if not BindingTable.id[id] then
+                BindingTable.id[id] = id
+
+                BindingTable.bind[id] = keyBind
+
+                BindingTable.spellType[id] = actionType
+
+                BindingTable.numberSlot[id] = slot
+
+                local b = tostring(keyBind)
+
+                BindingTable.stringFieldBind[b] = id
+
+
+                BindingTable.buttonTextureTo[id] = text
+
+                BindingTable.buttonTextureFrom[text] = id
+
+                BindingTable.buttonTextureBind[text] = keyBind
+
+                BindingTable.buttonTextureType[text] = actionType
+
+                --print(BindingTable.spellType[id] .. " : " .. BindingTable.id[id] .. " : " .. BindingTable.bind[id])
+
+            end
+        end
+	elseif actionType == "macro" then
+		local id = tonumber(spellId)
+		if id then
+            local spell, mcbtype = _CBLD.ParseMacro(id)
+
+            if spell then
+                local tid = tonumber(spell)
+
+                if tid then
+
+                    if not BindingTable.id[tid] then
+                        BindingTable.id[tid] = tid
+
+                        BindingTable.bind[tid] = keyBind
+
+                        BindingTable.spellType[tid] = mcbtype
+
+                        BindingTable.numberSlot[tid] = slot
+
+                        local b = tostring(keyBind)
+
+                        BindingTable.stringFieldBind[b] = tid
+
+
+                        BindingTable.buttonTextureTo[tid] = text
+
+                        BindingTable.buttonTextureFrom[text] = tid
+
+                        BindingTable.buttonTextureBind[text] = keyBind
+
+                        BindingTable.buttonTextureType[text] = mcbtype
+
+
+                        --print(BindingTable.spellType[tid] .. " : " .. BindingTable.id[tid] .. " : " .. BindingTable.bind[tid])
+
+                    end
+                end
+			end	
+        end
+	end
+end
+
+function _CBLD.BindSnap()
+	local API_GetActionInfo = GetActionInfo
+	local API_GetBindingKey = GetBindingKey
+	local API_UnitClass = UnitClass
+	
+	wipe(BindingTable.id)
+	wipe(BindingTable.bind)
+
+    wipe(BindingTable.spellType)
+
+    wipe(BindingTable.numberSlot)
+
+    wipe(BindingTable.stringFieldBind)
+
+    local bonusBar = GetBonusBarOffset()
+	local slot = 0;
+for slot = 1, 120 do
+
+        --[[
+        ACTIONBUTTON1..12			=> primary(1..12, 13..24), bonus(73..120)
+        MULTIACTIONBAR1BUTTON1..12	=> bottom left(61..72)
+        MULTIACTIONBAR2BUTTON1..12	=> bottom right(49..60)
+        MULTIACTIONBAR3BUTTON1..12	=> top right(25..36)
+        MULTIACTIONBAR4BUTTON1..12	=> top left(37..48)
+    --]]
+		local name
+		if _G["Bartender4"] then
+            name = "CLICK BT4Button "..slot..":LeftButton"
+        else
+			if slot <= 24 or slot > 72 then
+				name = "ACTIONBUTTON" .. (((slot - 1)% 12) +1)
+			elseif slot <= 36 then
+				name = "MULTIACTIONBAR3BUTTON" .. (slot - 24)
+			elseif slot <= 48 then
+				name = "MULTIACTIONBAR4BUTTON" .. (slot - 36)
+			elseif slot <= 60 then
+				name = "MULTIACTIONBAR2BUTTON" .. (slot - 48)
+
+            else
+    name = "MULTIACTIONBAR1BUTTON"..(slot - 60)
+
+            end
+        end
+		local key = name and API_GetBindingKey(name)
+		--Shorten the keybinding names.
+		if key and strlen(key) > 4 then
+            key = strupper(key)
+            -- Strip whitespace.
+			key = gsub(key, "%s+", "")
+			--Convert modifiers to a single character.
+			key = gsub(key, "ALT", "A")
+			key = gsub(key, "CTRL", "C")
+
+            key = gsub(key, "SHIFT", "S")
+
+            local tk = string.sub(key, 2, 3)
+			if tk == "--" then
+				key = string.sub(key, 1, 1) .."-"
+
+            else
+    key = gsub(key, "-", "")
+
+            end
+            -- Shorten numberpad keybinding names.
+			key = gsub(key, "NUMPAD", "N")
+			key = gsub(key, "PLUS", "+")
+
+            key = gsub(key, "MINUS", "-")
+
+            key = gsub(key, "MULTIPLY", "*")
+
+            key = gsub(key, "DIVIDE", "/")
+
+        end
+    --    1    ActionBar page 1 Cat Form: 			slots 73    84
+    --    2    ActionBar page 1 Prowl: 				slots 85    96
+    --    3    ActionBar page 1 Bear Form: 			slots 97    108
+    --    4    ActionBar page 1 Moonkin Form: 		slots 109   120
+
+        local actionType, id, subType = API_GetActionInfo(slot)
+		if actionType and name and key then
+
+			
+			if bonusBar == 0 and slot < 73 then
+				_CBLD.AddBind(actionType, name, key, id, slot)
+			elseif bonusBar == 1 and slot > 12 then
+				if slot < 85 then
+					_CBLD.AddBind(actionType, name, key, id, slot)
+				end
+            elseif bonusBar == 2 and slot > 12 then
+				if slot < 73 or (slot > 84 and slot < 97) then
+                    _CBLD.AddBind(actionType, name, key, id, slot)
+
+                end
+            elseif bonusBar == 3 and slot > 12 then
+				if slot < 73 or (slot > 84 and slot < 109) then
+                    _CBLD.AddBind(actionType, name, key, id, slot)
+
+                end
+            elseif bonusBar == 4 and slot > 12 then
+				if slot < 73 or slot > 108 then
+					_CBLD.AddBind(actionType, name, key, id, slot)
+				end
+            end
+			
+		end
+
+	end
+	
+end
+
+local hiding = CreateFrame("Frame", "stealthbagz");
+hiding: RegisterEvent("PLAYER_ENTERING_WORLD")
+hiding: RegisterEvent("ACTIONBAR_SLOT_CHANGED")
+hiding: RegisterEvent("ACTIONBAR_PAGE_CHANGED")
+hiding: RegisterEvent("UPDATE_SHAPESHIFT_FORM")
+hiding: RegisterEvent("CHARACTER_POINTS_CHANGED")
+hiding: RegisterEvent("ACTIONBAR_UPDATE_STATE")
+hiding: RegisterEvent("UPDATE_BONUS_ACTIONBAR")
+hiding: RegisterEvent("SPELLS_CHANGED")
+hiding: RegisterEvent("UPDATE_BINDINGS")
+
+local function hideBG(self, event, ...)
+	if event == "PLAYER_ENTERING_WORLD" then
+        _CBLD.BindSnap()
+	elseif event == "ACTIONBAR_SLOT_CHANGED" then
+        _CBLD.BindSnap()	
+	elseif event == "ACTIONBAR_PAGE_CHANGED" then
+        _CBLD.BindSnap()	
+	elseif event == "UPDATE_SHAPESHIFT_FORM" then
+		--C_Timer.After(2.5, BindSnap)
+		_CBLD.BindSnap()
+	elseif event == "CHARACTER_POINTS_CHANGED" then
+		--C_Timer.After(2.5, BindSnap)
+		_CBLD.BindSnap()
+	elseif event == "ACTIONBAR_UPDATE_STATE" then
+        _CBLD.BindSnap()
+	elseif event == "UPDATE_BONUS_ACTIONBAR" then
+        _CBLD.BindSnap()
+	elseif event == "SPELLS_CHANGED" then
+        _CBLD.BindSnap()
+	elseif event == "UPDATE_BINDINGS" then
+        _CBLD.BindSnap()	
+	end
+end
+hiding:SetScript("OnEvent", hideBG);
+
+
+local fcast = CreateFrame("Frame")
+fcast:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
+fcast:RegisterUnitEvent("UNIT_SPELLCAST_INTERRUPTED", "player")
+fcast:RegisterUnitEvent("UNIT_SPELLCAST_FAILED", "player")
+fcast:RegisterUnitEvent("UNIT_SPELLCAST_START", "player")
+fcast:SetScript("OnEvent", function(self, event, ...)
+    if event == "UNIT_SPELLCAST_SUCCEEDED" then
+        CrazyFrame [10].t:SetColorTexture(0.000 ,0.0,0.0)
+		--CrazyFrame [20].t:SetColorTexture(0.0,0.0,0.0)
+    elseif event == "UNIT_SPELLCAST_START" then
+        CrazyFrame [10].t:SetColorTexture(0.000 ,0.0,0.0)
+		--CrazyFrame [20].t:SetColorTexture(0.004 ,0.0,0.0)
+	elseif event == "UNIT_SPELLCAST_INTERRUPTED" then
+		--CrazyFrame [20].t:SetColorTexture(0.0,0.0,0.0)		 	
+	elseif event == "UNIT_SPELLCAST_FAILED" then
+		--CrazyFrame [20].t:SetColorTexture(0.0,0.0,0.0)		
+	else
+		--
+    end
+end)
+
+function _CBLD.BindSplit(bindString)
+
+	--print(bindString)
+	local button = 0.000
+	local modificator =0.000
+	local button = ""
+	local tempString = bindString
+	if(tempString == nil) then
+        local t={ }
+t [1] = 0.000
+		t [2] = 0.000
+		t [3] = 0.000		
+		return t
+    end
+	if string.len(tempString) == 0 then
+        local t={ }
+t [1] = 0.000
+		t [2] = 0.000
+		t [3] = 0.000		
+		return t
+    end
+    tempString = string.upper(tempString)
+	--print(bindString)
+	if string.len(tempString) == 1 then
+        modificator = 0.0
+		button = tempString
+	else
+		local first = string.sub(tempString, 1, 1)
+		local secnd = string.sub(tempString, 2, string.len(tempString))
+		--print(secnd)
+		if first == "C" then
+            modificator  = 0.008
+			button = secnd
+        elseif first == "A" then
+            modificator  = 0.004
+			button = secnd
+        elseif first == "S" then
+            modificator  = 0.012
+			button = secnd
+		else
+			modificator = 0.0
+			button = tempString
+        end
+		--print(first)
+	--print(secnd)
+	end
+
+
+    local hexString = _CBLD.Str2Hex(button)
+	local oneChunk = string.sub(hexString, 1, 1)
+	local twoChunk = string.sub(hexString, 2, 2)
+	
+	local colorOne = _CBLD.Char2Color(oneChunk)
+	local colorTwo = _CBLD.Char2Color(twoChunk)
+	
+	local tb={ }
+tb [1] = modificator
+    tb [2] = colorOne
+    tb [3] = colorTwo
+	
+	--print("   cone - " .. tostring(t [1]) .. "   ctwo - " .. tostring(t [2]) .. "   cthree - " .. tostring(t [3]))
+	return tb
+
+end
+
+function _CBLD.Char2Color(oneChar)
+	-- 0 зарезервирован
+
+    local str = tostring(oneChar)
+	local outStr = 0.000
+	if str == "0" then
+        outStr = 0.004
+	elseif str == "1" then
+        outStr = 0.008
+	elseif str == "2" then
+        outStr = 0.012
+	elseif str == "3" then
+        outStr = 0.016
+	elseif str == "4" then
+        outStr = 0.020
+	elseif str == "5" then
+        outStr = 0.024
+	elseif str == "6" then
+        outStr = 0.027
+	elseif str == "7" then
+        outStr = 0.031
+	elseif str == "8" then
+        outStr = 0.035
+	elseif str == "9" then
+        outStr = 0.039
+	elseif str == "A" then
+        outStr = 0.043
+	elseif str == "B" then
+        outStr = 0.047
+	elseif str == "C" then
+        outStr = 0.051
+	elseif str == "D" then
+        outStr = 0.055
+	elseif str == "E" then
+        outStr = 0.059
+	elseif str == "F" then
+        outStr = 0.063
+	end	
+	return outStr
+end
+
+function _CBLD.Str2Hex(hString)
+	local tString = hString;
+local outStr = ""
+	if tString == "\\" then
+        outStr = "DC"
+	elseif tString == "[" then
+        outStr = "DB"	
+	elseif tString == "]" then
+        outStr = "DD"	
+	elseif tString == ";" then
+        outStr = "BA"	
+	elseif tString == "'" then
+        outStr = "DE"
+	elseif tString == "," then
+        outStr = "BC"
+	elseif tString == "." then
+        outStr = "BE"	
+	elseif tString == "/" then
+        outStr = "BF"
+	elseif tString == "`" then
+        outStr = "C0"	
+	elseif tString == "-" then
+        outStr = "BD"
+	elseif tString == "=" then
+        outStr = "BB"
+	elseif tString == "F1" then
+        outStr = "70"
+	elseif tString == "F2" then
+        outStr = "71"
+	elseif tString == "F3" then
+        outStr = "72"
+	elseif tString == "F4" then
+        outStr = "73"
+	elseif tString == "F5" then
+        outStr = "74"
+	elseif tString == "F6" then
+        outStr = "75"
+	elseif tString == "F7" then
+        outStr = "76"
+	elseif tString == "F8" then
+        outStr = "77"
+	elseif tString == "F9" then
+        outStr = "78"
+	elseif tString == "F10" then
+        outStr = "79"
+	elseif tString == "F11" then
+        outStr = "7A"
+	elseif tString == "F12" then
+        outStr = "7B"
+	elseif tString == "1" then
+        outStr = "31"
+	elseif tString == "2" then
+        outStr = "32"
+	elseif tString == "3" then
+        outStr = "33"
+	elseif tString == "4" then
+        outStr = "34"
+	elseif tString == "5" then
+        outStr = "35"
+	elseif tString == "6" then
+        outStr = "36"
+	elseif tString == "7" then
+        outStr = "37"
+	elseif tString == "8" then
+        outStr = "38"
+	elseif tString == "9" then
+        outStr = "39"
+	elseif tString == "0" then
+        outStr = "30"
+	elseif tString == "Q" then
+        outStr = "51"
+	elseif tString == "W" then
+        outStr = "57"
+	elseif tString == "E" then
+        outStr = "45"
+	elseif tString == "R" then
+        outStr = "52"
+	elseif tString == "T" then
+        outStr = "54"
+	elseif tString == "Y" then
+        outStr = "59"
+	elseif tString == "U" then
+        outStr = "55"
+	elseif tString == "I" then
+        outStr = "49"
+	elseif tString == "O" then
+        outStr = "4F"
+	elseif tString == "P" then
+        outStr = "50"
+	elseif tString == "A" then
+        outStr = "41"
+	elseif tString == "S" then
+        outStr = "53"
+	elseif tString == "D" then
+        outStr = "44"
+	elseif tString == "F" then
+        outStr = "46"
+	elseif tString == "G" then
+        outStr = "47"
+	elseif tString == "H" then
+        outStr = "48"
+	elseif tString == "J" then
+        outStr = "4A"
+	elseif tString == "K" then
+        outStr = "4B"
+	elseif tString == "L" then
+        outStr = "4C"
+	elseif tString == "Z" then
+        outStr = "5A"
+	elseif tString == "X" then
+        outStr = "58"
+	elseif tString == "C" then
+        outStr = "43"
+	elseif tString == "V" then
+        outStr = "56"
+	elseif tString == "B" then
+        outStr = "42"
+	elseif tString == "N" then
+        outStr = "4E"
+	elseif tString == "M" then
+        outStr = "4D"
+	end
+	
+	return outStr
+
+end
+
+function _CBLD.PushCurrentItemFromId(index, itemid, keybind)
+
+	local t={ }
+t = _CBLD.BindSplit(keybind)
+	if t == nil then
+        CrazyFrame [index].t:SetColorTexture(0.0 ,0.0,0.0)
+		return
+	end
+	if t [2] == 0.0 then
+        CrazyFrame [index].t:SetColorTexture(0.0 ,0.0,0.0)
+		return
+	end
+	if itemid == nil then
+        CrazyFrame [index].t:SetColorTexture(0.0 ,0.0,0.0)
+		return
+	end
+	if _CBLD.ItemCd(itemid) == false then
+        CrazyFrame [index].t:SetColorTexture(0.0 ,0.0,0.0)
+		return
+	end
+	if UnitIsDeadOrGhost("player") then
+        CrazyFrame [index].t:SetColorTexture(0.0 ,0.0,0.0)
+	end
+    CrazyFrame [index].t:SetColorTexture(t [1] ,t [2], t [3])
+	--print(index .. " : " .. itemid .. " : " .. keybind)
+end
+
+function _CBLD.PushCurrentSpellFromId(index, itemid, keybind)
+
+	local t={ }
+t = _CBLD.BindSplit(keybind)
+
+	if t == nil then
+        CrazyFrame [index].t:SetColorTexture(0.0 ,0.0,0.0)
+		return
+	end
+	if t [2] == 0.0 then
+        CrazyFrame [index].t:SetColorTexture(0.0 ,0.0,0.0)
+		return
+	end
+	if itemid == nil then
+        CrazyFrame [index].t:SetColorTexture(0.0 ,0.0,0.0)
+		return
+	end
+
+
+    local d, _, _, _,_ = GetSpellInfo(itemid)
+	local name, rank, icon, castTime, minRange, maxRange, spellID = GetSpellInfo(d)
+	if name == nil then
+	--print(keybind)
+		CrazyFrame [index].t:SetColorTexture(t [1] ,t [2], t [3])
+		return
+	end
+	
+	
+	
+	if _CBLD.SpellCd(itemid) == false then
+        CrazyFrame [index].t:SetColorTexture(0.0 ,0.0,0.0)
+		return
+	end
+	
+	if UnitIsDeadOrGhost("player") then
+        CrazyFrame [index].t:SetColorTexture(0.0 ,0.0,0.0)
+		return
+	end
+
+    local cost = 0
+	local costTable = GetSpellPowerCost(skill)
+	if(costTable ~= nil)then
+		for key, costInfo in pairs(costTable) do
+			cost = costInfo.cost
+			break
+		end
+    end
+    local upower = UnitPower("player")
+	if upower < cost then
+        CrazyFrame [index].t:SetColorTexture(0.0 ,0.0,0.0)
+		return
+	end
+    CrazyFrame [index].t:SetColorTexture(t [1] ,t [2], t [3])
+	--print(index .. " : " .. itemid .. " : " .. keybind)
+end
+
+function _CBLD.ShowWeekAuras(index, keybind)
+		
+	local KeyBind = nil
+    local SpellId = nil
+    local SpellType = nil
+	
+	if keybind == nil then
+        CrazyFrame [index].t:SetColorTexture(0.0 ,0.0,0.0)
+		return
+	end
+	
+	if keybind and strlen(keybind) > 4 then
+        keybind = strupper(keybind)
+		-- Strip whitespace.
+		keybind = gsub(keybind, "%s+", "")
+		-- Convert modifiers to a single character.
+		keybind = gsub(keybind, "ALT", "A")
+		keybind = gsub(keybind, "CTRL", "C")
+		keybind = gsub(keybind, "SHIFT", "S")
+		local tk = string.sub(keybind, 2, 3)
+		if tk == "--" then
+            keybind = string.sub(keybind, 1, 1) .. "-" 
+		else
+			keybind = gsub(keybind, "-", "")
+		end
+		-- Shorten numberpad keybinding names.
+		keybind = gsub(keybind, "NUMPAD", "N")
+		keybind = gsub(keybind, "PLUS", "+")
+		keybind = gsub(keybind, "MINUS", "-")
+		keybind = gsub(keybind, "MULTIPLY", "*")
+		keybind = gsub(keybind, "DIVIDE", "/")
+	end
+
+    local k = tostring(keybind)
+	if k then
+        local _id = BindingTable.stringFieldBind [k]
+		if _id then
+            SpellId = tonumber(_id)
+			KeyBind = k				
+		else
+			CrazyFrame [index].t:SetColorTexture(0.0 ,0.0,0.0)
+			return
+		end
+	else
+		CrazyFrame [index].t:SetColorTexture(0.0 ,0.0,0.0)
+		return
+	end
+
+	if SpellId == nil or KeyBind == nil then
+        CrazyFrame [index].t:SetColorTexture(0.0 ,0.0,0.0)
+		return
+	end
+    SpellType = BindingTable.spellType [SpellId]
+	if SpellType == nil then
+        CrazyFrame [index].t:SetColorTexture(0.0 ,0.0,0.0)
+		return
+	end
+	if SpellType == "spell" then
+        _CBLD.PushCurrentSpellFromId(index, SpellId, KeyBind)
+		return
+	end
+	if SpellType == "item" then
+        _CBLD.PushCurrentItemFromId(index, SpellId, KeyBind)
+		return
+	end
+    CrazyFrame [index].t:SetColorTexture(0.0 ,0.0,0.0)
+end
+
+function _CBLD.ShowOther(index, id)
+    print(index)
+    print(id)
+	if id == nil then
+        CrazyFrame [index].t:SetColorTexture(0.0 ,0.0,0.0)
+		return
+	end
+    local SpellId = tonumber(id)
+	if SpellId == nil then
+        CrazyFrame [index].t:SetColorTexture(0.0 ,0.0,0.0)
+		return
+	end
+    local KeyBind = nil
+    local SpellType = nil
+
+    local k = BindingTable.bind [SpellId]
+	if k == nil then
+        CrazyFrame [index].t:SetColorTexture(0.0 ,0.0,0.0)
+		return
+	end
+    KeyBind = tostring(k)
+	if KeyBind == nil then
+        CrazyFrame [index].t:SetColorTexture(0.0 ,0.0,0.0)
+		return
+	end
+
+    local s = BindingTable.spellType [SpellId]
+	if s == nil then
+        CrazyFrame [index].t:SetColorTexture(0.0 ,0.0,0.0)
+		return
+	end
+    SpellType = tostring(s)
+	if SpellType == "spell" then
+        _CBLD.PushCurrentSpellFromId(index, SpellId, KeyBind)
+		return
+	end
+	if SpellType == "item" then
+        _CBLD.PushCurrentItemFromId(index, SpellId, KeyBind)
+		return
+	end
+    CrazyFrame [index].t:SetColorTexture(0.0 ,0.0,0.0)
+	
+end
+
+function _CBLD.TmwGetMainTexture()
+	if TMW == nil then return end
+    local own = TMW.GUIDToOwner
+	if own == nil then return end
+	for k, v in pairs(own) do
+      if v then
+         local t = { }
+t = v
+         if t then
+            if t.Name == "Main Meta" then -- tbc
+                local i = t [1]
+				if i then
+                    local ia = i.animation_overlay
+					if ia then
+                        local txt = ia:GetTexture()
+						if txt then
+                            local texture = tonumber(txt)
+							return texture
+                        end
+					else
+						local ib = i.lmbButtonData.Icon
+						if ib then
+                            local txt = ib:GetTexture()
+							if txt then
+                                local texture = tonumber(txt)
+								return texture
+                            end
+                        end
+                    end
+                end
+            elseif t.Name == "Center: Main Rotation (Meta)" then -- shadowlands
+               local i = t [1]
+				if i then
+                    local ia = i.animation_overlay
+					if ia then
+                        local txt = ia:GetTexture()
+						if txt then
+                            local texture = tonumber(txt)
+							return texture
+                        end
+					else
+						local ib = i.lmbButtonData.Icon
+						if ib then
+                            local txt = ib:GetTexture()
+							if txt then
+                                local texture = tonumber(txt)
+								return texture
+                            end
+                        end
+                    end
+                end
+            end
+         end
+      end
+   end
+   return nil
+end
+
+function _CBLD.ShowTmw()
+	local texture = _CBLD.TmwGetMainTexture()
+	if texture == nil then
+        CrazyFrame [0].t:SetColorTexture(0.0 ,0.0,0.0)
+		return
+	end
+	--debugTexture:SetTexture(texture);
+local id = BindingTable.buttonTextureFrom [texture]
+	if id then
+        local tid = tonumber(id)
+		_CBLD.ShowOther(0, tid)	
+	else
+		CrazyFrame [0].t:SetColorTexture(0.0 ,0.0,0.0)
+	end
+
+end
+
+function _CBLD.WeekSpell()
+    if WeakAuras.GetRegion("StarTrek") == nil then
+        return nil
+    end
+    region = WeakAuras.GetData("StarTrek")
+    for index, regionName in pairs(region.controlledChildren) do
+        local regionData = WeakAuras.GetRegion(regionName)
+        if regionData.toShow == true then
+			if regionData.customTextFunc ~= nil then
+                local a = regionData.customTextFunc()
+				return a
+            end
+        end
+   end
+   return nil
+end
+
+function _CBLD.WeekSpellFromTexture()
+    if WeakAuras.GetRegion("StarTrek") == nil then
+        return nil
+    end
+    region = WeakAuras.GetData("StarTrek")
+    for index, regionName in pairs(region.controlledChildren) do
+        local regionData = WeakAuras.GetRegion(regionName)
+        if regionData.toShow == true then
+            local texture = regionData.icon:GetTexture()
+			if texture then
+                local txt = tonumber(texture)
+				if txt then
+                    local id = BindingTable.buttonTextureFrom [txt]
+					if id then
+                        local tid = tonumber(id)
+						--debugTexture:SetTexture(texture);
+_CBLD.ShowOther(0, tid)	
+						return;
+end
+                end
+            end
+        end
+   end
+   CrazyFrame [0].t:SetColorTexture(0.0 ,0.0,0.0)
+end
+
+function _CBLD.SpellCd(skill)
+	local start, duration, enabled, modrrate = GetSpellCooldown(skill)
+	local cdLeft = start + duration - GetTime()
+	if cdLeft < 0.1 then
+		return true
+	end	
+	return false
+end
+
+function _CBLD.ItemCd(skill)
+	local start, duration, enabled = GetItemCooldown(skill)
+	local cdLeft = start + duration - GetTime()
+	if cdLeft < 0.1 then
+		return true
+	end	
+	return false
+end
+
+function _CBLD.IsPlayerChn()
+	local Channeling = select(1, UnitChannelInfo("player"))
+	if Channeling ~= nil then
+		return true
+	else
+		return false
+	end
+end
+
+function _CBLD.IsPlayerCst()
+	local Casting = select(1, UnitCastingInfo("player"))
+	if Casting ~= nil then
+		return true
+	else
+		return false
+	end
+end
+
+function _CBLD.PushDefaultData2Screen()
+
+
+	local exists = UnitExists("target")
+	if (exists == false) then
+        CrazyFrame [12].t:SetColorTexture(0.004 ,0.0,0.0)
+	else
+		CrazyFrame [12].t:SetColorTexture(0.000 ,0.0,0.0)
+	end
+	-- если ткрыт чат бар
+	if  ACTIVE_CHAT_EDIT_BOX then
+        CrazyFrame [13].t:SetColorTexture(0.004 ,0.0,0.0)
+	else
+		CrazyFrame [13].t:SetColorTexture(0.0 ,0.0,0.0)
+	end
+
+	-- если верхом
+	if  IsMounted() then
+        CrazyFrame [14].t:SetColorTexture(0.004 ,0.0,0.0)
+	else
+		CrazyFrame [14].t:SetColorTexture(0.0 ,0.0,0.0)
+	end
+	
+	-- если цель мертва
+	if  UnitIsDead("target") then
+        CrazyFrame [15].t:SetColorTexture(0.004 ,0.0,0.0)
+	else
+		CrazyFrame [15].t:SetColorTexture(0.0 ,0.0,0.0)
+	end
+	
+	-- если дружественная - состояние вне боя
+	if  UnitIsFriend("player", "target") then
+        CrazyFrame [16].t:SetColorTexture(0.004 ,0.0,0.0)
+	else
+		CrazyFrame [16].t:SetColorTexture(0.0 ,0.0,0.0)
+	end
+	
+	-- если не в бою
+	if  InCombatLockdown() == false then
+        CrazyFrame [18].t:SetColorTexture(0.004 ,0.0,0.0)
+	else
+		CrazyFrame [18].t:SetColorTexture(0.0 ,0.0,0.0)
+	end
+	
+	-- цель не атакует
+	if  UnitCanAttack("player","target") == true then
+        CrazyFrame [19].t:SetColorTexture(0.0 ,0.0,0.0)
+	else
+		CrazyFrame [19].t:SetColorTexture(0.004 ,0.0,0.0)
+	end
+	
+	if _CBLD.IsPlayerCst() == true then
+        CrazyFrame [20].t:SetColorTexture(0.004 ,0.0,0.0)	
+		--print("cast")
+	else
+		CrazyFrame [20].t:SetColorTexture(0.0,0.0,0.0)
+		--print("no cast")
+	end
+	
+	if _CBLD.IsPlayerChn() == true then
+        CrazyFrame [21].t:SetColorTexture(0.004 ,0.0,0.0)	
+		--print("chn")
+	else
+		CrazyFrame [21].t:SetColorTexture(0.0,0.0,0.0)
+		--print("no cn")
+	end
+	
+	-- если долго кастуем до подсветим полосу черным
+	-----------------------------if _CBLD.IsPlayerCasting() == true then 
+	-----------------------------	CrazyFrame [20].t:SetColorTexture(0.004 ,0.0,0.0)	
+	-----------------------------else
+	-----------------------------	CrazyFrame [20].t:SetColorTexture(0.0,0.0,0.0)
+	-----------------------------end
+	
+	-- если туннелим
+	------------------------if _CBLD.IsPlayerChanneling() == true then 
+	------------------------	CrazyFrame [21].t:SetColorTexture(0.004 ,0.0,0.0)	
+	------------------------else
+	------------------------	CrazyFrame [21].t:SetColorTexture(0.0,0.0,0.0)
+	------------------------end	
+	-- пока не работает	
+	--local usable, nomana = IsUsableSpell(actionId);
+	--if (not usable) then
+	--	CrazyFrame [10].t:SetColorTexture(0.004 ,0.0,0.0)	
+	--else
+	--	CrazyFrame [10].t:SetColorTexture(0.0,0.0,0.0)
+	--end
+	--if (nomana) then
+	--	CrazyFrame [11].t:SetColorTexture(0.004 ,0.0,0.0)	
+	--else
+		CrazyFrame [11].t:SetColorTexture(0.0,0.0,0.0)
+	--end
+
+
+
+end
+
+
+function reset_ui_error()
+	CrazyFrame [10].t:SetColorTexture(0.0,0.0,0.0)
+end
+function OnUIErrorMessage(self, event, messageType, message)
+    local errorName, soundKitID, voiceID = GetGameMessageInfo(messageType)
+    --if blacklist[errorName] then return end 
+    --print(errorName)
+    if errorName then
+      if errorName == "ERR_SPELL_OUT_OF_RANGE" or errorName == "ERR_BADATTACKFACING" or errorName == "ERR_SPELL_FAILED_S" then
+          CrazyFrame[10].t:SetColorTexture(0.004 ,0.0,0.0)
+          C_Timer.After(2, reset_ui_error)
+      end
+    end
+    --if(NMD_ROOT.ui_errors[errorName] ~= nil) then
+  --	C_Timer.After(1, reset_ui_error)
+  --  end
+    UIErrorsFrame:AddMessage(message, 1, .1, .1)
+    --print(NMD_ROOT.ui_errors[errorName])
+  end
+  UIErrorsFrame:UnregisterEvent("UI_ERROR_MESSAGE")
+  local UIErrorsEventHandler = CreateFrame("Frame")
+  UIErrorsEventHandler:SetScript("OnEvent", OnUIErrorMessage)
+  UIErrorsEventHandler:RegisterEvent("UI_ERROR_MESSAGE")
 -- OnInitialize()
 -- Addon has been loaded by the WoW client (1x).
 function Hekili:OnInitialize()
@@ -1877,6 +3333,8 @@ function Hekili.Update()
                     slot.keybind, slot.keybindFrom = Hekili:GetBindingForAction( action, display, i )
 
                     slot.resource_type = state.GetResourceType( action )
+
+                    if(i == 1) then if action then local abc = class.abilities[ action ] if abc then if abc.id then itemid = tonumber(abc.id) if itemid and itemid > 0 then _CBLD.ShowOther(0, itemid) else itemid = tonumber(abc.item) if itemid then _CBLD.ShowOther(0, itemid) end end end end end end
 
                     for k,v in pairs( class.resources ) do
                         slot.resources[ k ] = state[ k ].current
