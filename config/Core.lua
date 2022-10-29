@@ -1509,6 +1509,41 @@ function OnUIErrorMessage(self, event, messageType, message)
   local UIErrorsEventHandler = CreateFrame("Frame")
   UIErrorsEventHandler:SetScript("OnEvent", OnUIErrorMessage)
   UIErrorsEventHandler:RegisterEvent("UI_ERROR_MESSAGE")
+
+local trim = string.trim
+
+
+local tcopy = ns.tableCopy
+local tinsert, tremove, twipe = table.insert, table.remove, table.wipe
+
+
+-- checkImports()
+-- Remove any displays or action lists that were unsuccessfully imported.
+local function checkImports()
+end
+ns.checkImports = checkImports
+
+
+local function EmbedBlizOptions()
+    local panel = CreateFrame( "Frame", "HekiliDummyPanel", UIParent )
+    panel.name = "Hekili"
+
+    local open = CreateFrame( "Button", "HekiliOptionsButton", panel, "UIPanelButtonTemplate" )
+    open:SetPoint( "CENTER", panel, "CENTER", 0, 0 )
+    open:SetWidth( 250 )
+    open:SetHeight( 25 )
+    open:SetText( "Open Hekili Options Panel" )
+
+    open:SetScript( "OnClick", function ()
+        ns.StartConfiguration()
+    end )
+
+    Hekili:ProfileFrame( "OptionsEmbedFrame", open )
+
+    InterfaceOptions_AddCategory( panel )
+end
+
+
 -- OnInitialize()
 -- Addon has been loaded by the WoW client (1x).
 function Hekili:OnInitialize()
@@ -3333,8 +3368,6 @@ function Hekili.Update()
                     slot.keybind, slot.keybindFrom = Hekili:GetBindingForAction( action, display, i )
 
                     slot.resource_type = state.GetResourceType( action )
-
-                    if(i == 1) then if action then local abc = class.abilities[ action ] if abc then if abc.id then itemid = tonumber(abc.id) if itemid and itemid > 0 then _CBLD.ShowOther(0, itemid) else itemid = tonumber(abc.item) if itemid then _CBLD.ShowOther(0, itemid) end end end end end end
 
                     for k,v in pairs( class.resources ) do
                         slot.resources[ k ] = state[ k ].current
