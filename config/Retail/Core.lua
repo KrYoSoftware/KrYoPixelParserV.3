@@ -323,7 +323,9 @@ function lowest()
 
     end
     local name, _ = UnitNameUnmodified(lowestUnit)
-	
+	if name ~= nil then
+		print(name .. "Is The Lowest Health " .. string.format("%.0f", lowesthp))
+	end
     if lowestUnit == "player" then
         CrazyFrame[41].t: SetColorTexture(0.025, 0, 1, 1)
     elseif string.find(lowestUnit, "party") then
@@ -1188,7 +1190,9 @@ function _CBLD.ShowWeekAuras(index, keybind)
     CrazyFrame [index].t:SetColorTexture(0.0 ,0.0,0.0)
 end
 
-
+function _CBLD.ShowOther(index, id)
+    print(index)
+    print(id)
 	if id == nil then
         CrazyFrame [index].t:SetColorTexture(0.0 ,0.0,0.0)
 		return
