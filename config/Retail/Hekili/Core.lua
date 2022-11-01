@@ -323,7 +323,9 @@ function lowest()
 
     end
     local name, _ = UnitNameUnmodified(lowestUnit)
-
+	if name ~= nil then
+		print(name .. "Is The Lowest Health " .. string.format("%.0f", lowesthp))
+	end
     if lowestUnit == "player" then
         CrazyFrame[41].t: SetColorTexture(0.025, 0, 1, 1)
     elseif string.find(lowestUnit, "party") then
