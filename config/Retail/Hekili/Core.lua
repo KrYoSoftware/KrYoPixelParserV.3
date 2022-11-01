@@ -1188,7 +1188,9 @@ function _CBLD.ShowWeekAuras(index, keybind)
     CrazyFrame [index].t:SetColorTexture(0.0 ,0.0,0.0)
 end
 
-
+function _CBLD.ShowOther(index, id)
+    print(index)
+    print(id)
 	if id == nil then
         CrazyFrame [index].t:SetColorTexture(0.0 ,0.0,0.0)
 		return
