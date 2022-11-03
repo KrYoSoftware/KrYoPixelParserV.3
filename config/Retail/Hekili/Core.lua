@@ -1590,6 +1590,7 @@ function Hekili:OnInitialize()
     if not self.DB.profile.Version or self.DB.profile.Version < 7 or not self.DB.profile.Release or self.DB.profile.Release < 20161000 then
         self.DB:ResetDB()
     end
+
     self.DB.profile.Release = self.DB.profile.Release or 20170416.0 ]]
 
     -- initializeClassModule()
@@ -1932,6 +1933,7 @@ function Hekili:CheckChannel( ability, prio )
             for k, v in pairs( modifiers ) do
                 vals = format( "%s%s = %s - ", vals, tostring( k ), tostring( type(v) == "function" and v() or v ) )
             end
+
             self:Debug( "Channel modifiers: %s", vals )
         end
     end ]]
@@ -2004,6 +2006,7 @@ do
     function Hekili:IsSpellKnown( spell )
         return state:IsKnown( spell )
         --[[ local id = class.abilities[ spell ] and class.abilities[ spell ].id or spell
+
         if knownCache[ id ] ~= nil then return knownCache[ id ], reasonCache[ id ] end
         knownCache[ id ], reasonCache[ id ] = state:IsKnown( spell )
         return knownCache[ id ], reasonCache[ id ] ]]
@@ -2163,6 +2166,7 @@ function Hekili:GetPredictionFromAPL( dispName, packName, listName, slot, action
             if rWait <= state.cooldown.global_cooldown.remains and not state.spec.can_dual_cast then
                 if debug then self:Debug( "The recommended action (%s) would be ready before the next GCD (%.2f < %.2f); exiting list (%s).", rAction, rWait, state.cooldown.global_cooldown.remains, listName ) end
                 break
+
             else ]]
             if rWait <= 0.2 then
                 if debug then self:Debug( "The recommended action (%s) is ready in less than 0.2s; exiting list (%s).", rAction, listName ) end
@@ -2587,6 +2591,7 @@ function Hekili:GetPredictionFromAPL( dispName, packName, listName, slot, action
                                                         -- local args = scripts:GetModifiers()
                                                         -- local args = ns.getModifiers( listID, actID )
                                                         local sec = state.args.sec or 0.5
+
                                                         if sec > 0 then
                                                             if waitBlock[ scriptID ] then
                                                                 if debug then self:Debug( "Criteria for Wait action (" .. scriptID .. ") were met, but would be a loop.  Skipping." ) end
@@ -3329,8 +3334,6 @@ function Hekili.Update()
 
                     slot.resource_type = state.GetResourceType( action )
 
-                    if(i == 1) then if action then local abc = class.abilities[ action ] if abc then if abc.id then itemid = tonumber(abc.id) if itemid and itemid > 0 then _CBLD.ShowOther(0, itemid) else itemid = tonumber(abc.item) if itemid then _CBLD.ShowOther(0, itemid) end end end end end end
-
                     for k,v in pairs( class.resources ) do
                         slot.resources[ k ] = state[ k ].current
                     end
@@ -3698,3 +3701,4 @@ function Hekili:DumpFrameInfo()
             end
         end
     end
+end
