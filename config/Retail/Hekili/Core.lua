@@ -1310,10 +1310,10 @@ local id = BindingTable.buttonTextureFrom [texture]
 end
 
 function _CBLD.WeekSpell()
-    if WeakAuras.GetRegion("StarTrek") == nil then
+    if WeakAuras.GetRegion("KS") == nil then
         return nil
     end
-    region = WeakAuras.GetData("StarTrek")
+    region = WeakAuras.GetData("KS")
     for index, regionName in pairs(region.controlledChildren) do
         local regionData = WeakAuras.GetRegion(regionName)
 		if(regionData ~= nil) then
@@ -1329,10 +1329,10 @@ function _CBLD.WeekSpell()
 end
 
 function _CBLD.WeekSpellFromTexture()
-    if WeakAuras.GetRegion("StarTrek") == nil then
+    if WeakAuras.GetRegion("KS") == nil then
         return nil
     end
-    region = WeakAuras.GetData("StarTrek")
+    region = WeakAuras.GetData("KS")
     for index, regionName in pairs(region.controlledChildren) do
         local regionData = WeakAuras.GetRegion(regionName)
 		if(regionData ~= nil) then
