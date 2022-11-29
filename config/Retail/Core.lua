@@ -1316,12 +1316,14 @@ function _CBLD.WeekSpell()
     region = WeakAuras.GetData("StarTrek")
     for index, regionName in pairs(region.controlledChildren) do
         local regionData = WeakAuras.GetRegion(regionName)
+		if(regionData ~= nil) then
         if regionData.toShow == true then
 			if regionData.customTextFunc ~= nil then
                 local a = regionData.customTextFunc()
 				return a
             end
         end
+		end
    end
    return nil
 end
@@ -1333,6 +1335,7 @@ function _CBLD.WeekSpellFromTexture()
     region = WeakAuras.GetData("StarTrek")
     for index, regionName in pairs(region.controlledChildren) do
         local regionData = WeakAuras.GetRegion(regionName)
+		if(regionData ~= nil) then
         if regionData.toShow == true then
             local texture = regionData.icon:GetTexture()
 			if texture then
@@ -1348,6 +1351,7 @@ end
                 end
             end
         end
+		end
    end
    CrazyFrame [0].t:SetColorTexture(0.0 ,0.0,0.0)
 end
@@ -3702,4 +3706,3 @@ function Hekili:DumpFrameInfo()
         end
     end
 end
-
