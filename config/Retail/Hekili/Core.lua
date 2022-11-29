@@ -77,7 +77,7 @@ local cooldowns = { --These should be spellIDs for the spell you want to track f
 local s_count = 0;
 local btnTMWmain = nil
 function EventFrame:OnEvent(event, ...)
-    -- print("Welcome to Meoww Legion!")
+
 
     self[event](self, ...)
 end
@@ -235,14 +235,14 @@ function updateSpellCooldowns(sinceLastUpdate)
 		-- duration is the total duration of the cooldown, NOT the remaining
         local name = GetSpellInfo(spellId)
         if name~= nil then
-         --   print(name)
+
             local startTime, duration, enabled, modRate = GetSpellCooldown(name)
         if startTime  == nil  then
             CrazyFrame[spellId].t: SetColorTexture(0, 0, 0, 1)
             CrazyFrame[spellId].t:SetAllPoints(false)
                 end
         if enabled == 0 then
-            print(name.." is currently active, use it and wait "..duration.." seconds for the next one.");
+
 return 0
         elseif(startTime~= nil and duration ~= nil and startTime > 0 and duration > 0) then
             local timeRemaining=(startTime  + duration - GetTime())
@@ -298,7 +298,7 @@ end
 
 function castable(spell) 
 	local name, rank, icon, castTime, minRange, maxRange, spellID = GetSpellInfo(spell)
-	print(spellID)
+
 	local usable, nomana = IsUsableSpell(spell)
 	local cdcheck = spellcooldown(spell) == 0
 
@@ -833,7 +833,7 @@ t [1] = 0.000
 	else
 		local first = string.sub(tempString, 1, 1)
 		local secnd = string.sub(tempString, 2, string.len(tempString))
-		--print(secnd)
+
 		if first == "C" then
             modificator  = 0.008
 			button = secnd
@@ -847,8 +847,8 @@ t [1] = 0.000
 			modificator = 0.0
 			button = tempString
         end
-		--print(first)
-	--print(secnd)
+
+
 	end
 
 
@@ -1189,8 +1189,6 @@ function _CBLD.ShowWeekAuras(index, keybind)
 end
 
 function _CBLD.ShowOther(index, id)
-    print(index)
-    print(id)
 	if id == nil then
         CrazyFrame [index].t:SetColorTexture(0.0 ,0.0,0.0)
 		return
@@ -1494,7 +1492,7 @@ end
 function OnUIErrorMessage(self, event, messageType, message)
     local errorName, soundKitID, voiceID = GetGameMessageInfo(messageType)
     --if blacklist[errorName] then return end 
-    --print(errorName)
+
     if errorName then
       if errorName == "ERR_SPELL_OUT_OF_RANGE" or errorName == "ERR_BADATTACKFACING" or errorName == "ERR_SPELL_FAILED_S" then
           CrazyFrame[10].t:SetColorTexture(0.004 ,0.0,0.0)
