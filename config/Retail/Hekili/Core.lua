@@ -298,7 +298,7 @@ end
 
 function castable(spell) 
 	local name, rank, icon, castTime, minRange, maxRange, spellID = GetSpellInfo(spell)
-	print(spellID)
+
 	local usable, nomana = IsUsableSpell(spell)
 	local cdcheck = spellcooldown(spell) == 0
 
@@ -559,7 +559,7 @@ function _CBLD.AddBind(actionType, buttonName, keyBind, spellId, slot)
                 BindingTable.buttonTextureBind[text] = keyBind
 
                 BindingTable.buttonTextureType[text] = actionType
-                --print(BindingTable.spellType[id] .. " : " .. BindingTable.id[id] .. " : " .. BindingTable.bind[id])
+
 
             end
         end
@@ -589,7 +589,6 @@ function _CBLD.AddBind(actionType, buttonName, keyBind, spellId, slot)
 
                 BindingTable.buttonTextureType[text] = actionType
 
-                --print(BindingTable.spellType[id] .. " : " .. BindingTable.id[id] .. " : " .. BindingTable.bind[id])
 
             end
         end
@@ -806,7 +805,7 @@ end)
 
 function _CBLD.BindSplit(bindString)
 
-	--print(bindString)
+
 	local button = 0.000
 	local modificator =0.000
 	local button = ""
@@ -826,14 +825,14 @@ t [1] = 0.000
 		return t
     end
     tempString = string.upper(tempString)
-	--print(bindString)
+
 	if string.len(tempString) == 1 then
         modificator = 0.0
 		button = tempString
 	else
 		local first = string.sub(tempString, 1, 1)
 		local secnd = string.sub(tempString, 2, string.len(tempString))
-		--print(secnd)
+
 		if first == "C" then
             modificator  = 0.008
 			button = secnd
@@ -847,8 +846,8 @@ t [1] = 0.000
 			modificator = 0.0
 			button = tempString
         end
-		--print(first)
-	--print(secnd)
+
+
 	end
 
 
@@ -864,7 +863,7 @@ tb [1] = modificator
     tb [2] = colorOne
     tb [3] = colorTwo
 	
-	--print("   cone - " .. tostring(t [1]) .. "   ctwo - " .. tostring(t [2]) .. "   cthree - " .. tostring(t [3]))
+
 	return tb
 
 end
@@ -1061,7 +1060,7 @@ t = _CBLD.BindSplit(keybind)
         CrazyFrame [index].t:SetColorTexture(0.0 ,0.0,0.0)
 	end
     CrazyFrame [index].t:SetColorTexture(t [1] ,t [2], t [3])
-	--print(index .. " : " .. itemid .. " : " .. keybind)
+
 end
 
 function _CBLD.PushCurrentSpellFromId(index, itemid, keybind)
@@ -1086,7 +1085,7 @@ t = _CBLD.BindSplit(keybind)
     local d, _, _, _,_ = GetSpellInfo(itemid)
 	local name, rank, icon, castTime, minRange, maxRange, spellID = GetSpellInfo(d)
 	if name == nil then
-	--print(keybind)
+
 		CrazyFrame [index].t:SetColorTexture(t [1] ,t [2], t [3])
 		return
 	end
@@ -1117,7 +1116,7 @@ t = _CBLD.BindSplit(keybind)
 		return
 	end
     CrazyFrame [index].t:SetColorTexture(t [1] ,t [2], t [3])
-	--print(index .. " : " .. itemid .. " : " .. keybind)
+
 end
 
 function _CBLD.ShowWeekAuras(index, keybind)
@@ -1504,7 +1503,7 @@ function OnUIErrorMessage(self, event, messageType, message)
   --	C_Timer.After(1, reset_ui_error)
   --  end
     UIErrorsFrame:AddMessage(message, 1, .1, .1)
-    --print(NMD_ROOT.ui_errors[errorName])
+
   end
   UIErrorsFrame:UnregisterEvent("UI_ERROR_MESSAGE")
   local UIErrorsEventHandler = CreateFrame("Frame")
