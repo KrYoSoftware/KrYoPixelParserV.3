@@ -21,22 +21,15 @@ local GetItemInfo = ns.CachedGetItemInfo
 
 local trim = string.trim
 
+
 local tcopy = ns.tableCopy
 local tinsert, tremove, twipe = table.insert, table.remove, table.wipe
-
-local GetSpecialization = _G.GetSpecialization or function() return GetActiveTalentGroup() end
-local GetSpecializationInfo = _G.GetSpecializationInfo or function()
-    local name, baseName, id = UnitClass( "player" )
-    return id, baseName, name
-end
 
 
 -- checkImports()
 -- Remove any displays or action lists that were unsuccessfully imported.
 local function checkImports()
 end
-
-
 ns.checkImports = checkImports
 
 
@@ -51,9 +44,6 @@ local function EmbedBlizOptions()
     open:SetText( "Open Hekili Options Panel" )
 
     open:SetScript( "OnClick", function ()
-        InterfaceOptionsFrameOkay:Click()
-        GameMenuButtonContinue:Click()
-
         ns.StartConfiguration()
     end )
 
@@ -61,7 +51,6 @@ local function EmbedBlizOptions()
 
     InterfaceOptions_AddCategory( panel )
 end
-
 
 local EventFrame = CreateFrame("Frame")
 
@@ -1321,29 +1310,32 @@ local id = BindingTable.buttonTextureFrom [texture]
 end
 
 function _CBLD.WeekSpell()
-    if WeakAuras.GetRegion("StarTrek") == nil then
+    if WeakAuras.GetRegion("KS") == nil then
         return nil
     end
-    region = WeakAuras.GetData("StarTrek")
+    region = WeakAuras.GetData("KS")
     for index, regionName in pairs(region.controlledChildren) do
         local regionData = WeakAuras.GetRegion(regionName)
+		if(regionData ~= nil) then
         if regionData.toShow == true then
 			if regionData.customTextFunc ~= nil then
                 local a = regionData.customTextFunc()
 				return a
             end
         end
+		end
    end
    return nil
 end
 
 function _CBLD.WeekSpellFromTexture()
-    if WeakAuras.GetRegion("StarTrek") == nil then
+    if WeakAuras.GetRegion("KS") == nil then
         return nil
     end
-    region = WeakAuras.GetData("StarTrek")
+    region = WeakAuras.GetData("KS")
     for index, regionName in pairs(region.controlledChildren) do
         local regionData = WeakAuras.GetRegion(regionName)
+		if(regionData ~= nil) then
         if regionData.toShow == true then
             local texture = regionData.icon:GetTexture()
 			if texture then
@@ -1359,6 +1351,7 @@ end
                 end
             end
         end
+		end
    end
    CrazyFrame [0].t:SetColorTexture(0.0 ,0.0,0.0)
 end
@@ -1541,8 +1534,7 @@ function Hekili:OnInitialize()
     AceConfig:RegisterOptionsTable( "Hekili", self.Options )
 
     local AceConfigDialog = LibStub( "AceConfigDialog-3.0" )
-    -- self.optionsFrame = AceConfigDialog:AddToBlizOptions( "Hekili", "Hekili" )
-    EmbedBlizOptions()
+    -- EmbedBlizOptions()
 
     self:RegisterChatCommand( "hekili", "CmdLine" )
     self:RegisterChatCommand( "hek", "CmdLine" )
@@ -1647,7 +1639,10 @@ function Hekili:OnEnable()
     self:TotalRefresh( true )
 
     ns.ReadKeybindings()
+    self:UpdateDisplayVisibility()
     self:ForceUpdate( "ADDON_ENABLED" )
+
+    self:Print( "Dragonflight is a work-in-progress.  See |cFFFFD100/hekili|r for class/specialization status." )
     ns.Audit()
 end
 
@@ -2093,7 +2088,7 @@ do
 
         prevTime = time
 
-        if force or time - self.frameStartTime > self.maxFrameTime * 0.9 then
+        if force or time - self.frameStartTime > self.maxFrameTime then
             coroutine.yield()
 
             prevMsg = "Resumed thread..."
@@ -2211,7 +2206,7 @@ function Hekili:GetPredictionFromAPL( dispName, packName, listName, slot, action
 
                 if not ability then
                     if not invalidActionWarnings[ scriptID ] then
-                        Hekili:Error( "Priority '%s' uses action '%s' ( %s - %d ) that is not found in the abilities table.", packName, action, listName, actID )
+                        Hekili:Error( "Priority '%s' uses action '%s' ( %s - %d ) that is not found in the abilities table.", packName, action or "unknown", listName, actID )
                         invalidActionWarnings[ scriptID ] = true
                     end
 
@@ -2673,7 +2668,7 @@ function Hekili:GetPredictionFromAPL( dispName, packName, listName, slot, action
 
                                                             local next_known  = next_action and state:IsKnown( next_action )
                                                             local next_usable, next_why = next_action and state:IsUsable( next_action )
-                                                            local next_cost   = next_action and state.action[ next_action ].cost or 0
+                                                            local next_cost   = next_action and state.action[ next_action ] and state.action[ next_action ].cost or 0
                                                             local next_res    = next_action and state.GetResourceType( next_action ) or class.primaryResource
 
                                                             if not next_entry then
@@ -2915,10 +2910,10 @@ end
 
 
 local displayRules = {
-    { "Interrupts", function( p ) return p.toggles.interrupts.value and p.toggles.interrupts.separate end },
-    { "Defensives", function( p ) return p.toggles.defensives.value and p.toggles.defensives.separate end },
-    { "Cooldowns",  function( p ) return p.toggles.cooldowns.value  and p.toggles.cooldowns.separate  end },
-    { "Primary", function() return true end },
+    { "Interrupts", function( p ) return p.toggles.interrupts.value and p.toggles.interrupts.separate end, true },
+    { "Defensives", function( p ) return p.toggles.defensives.value and p.toggles.defensives.separate end, false },
+    { "Cooldowns",  function( p ) return p.toggles.cooldowns.value  and p.toggles.cooldowns.separate  end, false },
+    { "Primary", function() return true end, true },
     { "AOE", function( p )
         local spec = rawget( p.specs, state.spec.id )
         if not spec or not class.specs[ state.spec.id ] then return false end
@@ -2932,7 +2927,7 @@ local displayRules = {
         end
 
         return true
-    end },
+    end, true },
 }
 
 
@@ -2950,36 +2945,27 @@ function Hekili.Update()
 
     local profile = Hekili.DB.profile
 
-    local specID = GetSpecializationInfo( GetSpecialization() )
-    if not specID then
-        return
-    end
+    local specID = state.spec.id
+    if not specID then return end
 
     local spec = rawget( profile.specs, specID )
-    if not spec then
-        return
-    end
+    if not spec then return end
 
     local packName = spec.package
-    if not packName then
-        return
-    end
+    if not packName then return end
 
     local pack = rawget( profile.packs, packName )
-    if not pack then
-        return
-    end
+    if not pack then return end
 
     local debug = Hekili.ActiveDebug
 
-    HekiliEngine.threadSpec = specID
     Hekili:ResetThreadClock()
     Hekili:GetNumTargets( true )
 
     local snaps = nil
 
     for i, info in ipairs( displayRules ) do
-        local dispName, rule = unpack( info )
+        local dispName, rule, fullReset = unpack( info )
         local display = rawget( profile.displays, dispName )
 
         if debug then
@@ -3010,7 +2996,7 @@ function Hekili.Update()
 
             -- Hekili:Yield( "Pre-Reset for " .. dispName .. " (from " .. state.display .. ")" )
 
-            state.reset( dispName )
+            state.reset( dispName, fullReset )
 
             Hekili:Yield( "Post-Reset for " .. dispName )
 
@@ -3255,7 +3241,7 @@ function Hekili.Update()
                 Hekili:Yield( "After events for " .. dispName )
 
                 if not action then
-                    if class.file == "DEATHKNIGHT" and rawget( state, "rune" ) then
+                    if class.file == "DEATHKNIGHT" then
                         state:SetConstraint( 0, max( 0.01 + state.rune.cooldown * 2, 10 ) )
                     else
                         state:SetConstraint( 0, 10 )
@@ -3485,7 +3471,7 @@ function Hekili.Update()
                             Hekili:Debug( resInfo )
                         end
                     else
-                        if not hasSnapped and profile.autoSnapshot and InCombatLockdown() and state.level >= 50 and ( dispName == "Primary" or dispName == "AOE" ) and class.primaryResource and state[ class.primaryResource ].percent > 20 then
+                        if not hasSnapped and profile.autoSnapshot and InCombatLockdown() and state.level >= 50 and ( dispName == "Primary" or dispName == "AOE" ) then
                             Hekili:Print( "Unable to make recommendation for " .. dispName .. " #" .. i .. "; triggering auto-snapshot..." )
                             hasSnapped = dispName
                             UI:SetThreadLocked( false )
